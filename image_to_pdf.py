@@ -33,6 +33,9 @@ def create_pdf_from_images(img_list, save_path):
     with open(save_file_name, "wb") as f:
         f.write(img2pdf.convert(img_list))
 
+    sg.popup_ok(f"{save_file_name.name} created in\n"
+                f"{save_path}")
+
 
 def read_config_info():
     config = ConfigParser()
@@ -62,7 +65,7 @@ def gui_layout():
 
     source_path, save_path = read_config_info()
 
-    sg.ChangeLookAndFeel("Light Green")
+    sg.theme("Light Green")
     layout = [
               [sg.Text(f"Select the source folder where images are located")],
               [sg.Input(source_path, disabled=True, key="source_path"),
@@ -75,7 +78,7 @@ def gui_layout():
                sg.Button("Exit", size=(10, 1))],
               ]
 
-    return sg.Window("Images to PDF").Layout(layout)
+    return sg.Window("Images to PDF", layout)
 
 
 def event_loop():
@@ -83,9 +86,10 @@ def event_loop():
     window = gui_layout()
 
     while True:
-        event, values = window.Read(100)
+        event, values = window.read()
 
         if event in (None, "Exit"):
+            window.close()
             break
 
         if event == "Create PDF":
