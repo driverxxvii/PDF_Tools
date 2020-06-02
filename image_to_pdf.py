@@ -5,6 +5,14 @@ from configparser import ConfigParser
 import os
 
 
+def verify_folder_path(folder_path):
+    folder_path = pathlib.Path(folder_path)
+    if folder_path.is_dir():
+        return True
+    else:
+        return False
+
+
 def get_image_list(source_path):
     source_path = pathlib.Path(source_path)
     img_list = []
@@ -16,7 +24,6 @@ def get_image_list(source_path):
 
 
 def create_pdf_from_images(img_list, save_path):
-
     save_file_name = pathlib.Path(save_path).joinpath("Image_to_pdf.pdf")
 
     # Check if there are any images in the source folder
@@ -37,52 +44,51 @@ def create_pdf_from_images(img_list, save_path):
                 f"{save_path}")
 
 
-def read_config_info():
+def read_config_info(section, option):
     config = ConfigParser()
     config_file = pathlib.Path(os.getcwd()).joinpath("Image_to_pdf.ini")
     if not config_file.exists():
-        return "", ""
+        config.add_section("settings")
+        config.set("settings", "source", "")
+        config.set("settings", "destination", "")
+        with open(config_file, "w") as f:
+            config.write(f)
 
     config.read(config_file)
-
-    source_path = config.get("settings", "source")
-    save_path = config.get("settings", "destination")
-    return source_path, save_path
+    return config.get(section, option)
 
 
-def write_config_info(source_path, save_path):
+def write_config_info(section, option, value):
     config = ConfigParser()
-    config["settings"] = {
-        "source": source_path,
-        "destination": save_path
-    }
     config_file = pathlib.Path(os.getcwd()).joinpath("Image_to_pdf.ini")
+    config.read(config_file)
+    config.set(section, option, value)
+
     with open(config_file, "w") as f:
         config.write(f)
 
 
 def gui_layout():
-
-    source_path, save_path = read_config_info()
-
+    source_path = read_config_info("settings", "source")
+    save_path = read_config_info("settings", "destination")
     sg.theme("Light Green")
     layout = [
-              [sg.Text(f"Select the source folder where images are located")],
-              [sg.Input(source_path, disabled=True, key="source_path"),
-               sg.FolderBrowse()],
-              [sg.Text("Select where you want the pdf file to be saved\n"
-                       "The pdf file will be called Image_to_pdf.pdf")],
-              [sg.Input(save_path, disabled=True, key="save_path"),
-               sg.FolderBrowse()],
-              [sg.Button("Create PDF", key="Create PDF", size=(10, 1)),
-               sg.Button("Exit", size=(10, 1))],
-              ]
+        [sg.Text(f"Select the source folder where images are located")],
+        [sg.Input(source_path, disabled=False, key="source_path"),
+         sg.FolderBrowse()],
+        [sg.Text("Select where you want the pdf file to be saved\n"
+                 "The pdf file will be called Image_to_pdf.pdf")],
+        [sg.Input(save_path, disabled=False, key="save_path"),
+         sg.FolderBrowse()],
+        [sg.Button("Create PDF", key="Create PDF", size=(10, 1)),
+         sg.Button("Exit", size=(10, 1))],
+        # [sg.Button("Test", key="Test")]
+    ]
 
     return sg.Window("Images to PDF", layout)
 
 
 def event_loop():
-
     window = gui_layout()
 
     while True:
@@ -93,12 +99,19 @@ def event_loop():
             break
 
         if event == "Create PDF":
-            source_path = values["source_path"]
+            source_path = values["source_path"]  # read values from input boxes
             save_path = values["save_path"]
             if source_path == "" or save_path == "":
                 sg.popup("Please select a source and destination folder")
+            elif not verify_folder_path(source_path):
+                sg.popup("The source folder specified is invalid\n"
+                         "Please select a valid folder")
+            elif not verify_folder_path(save_path):
+                sg.popup("The save folder specified is invalid\n"
+                         "Please select a valid folder")
             else:
-                write_config_info(source_path, save_path)
+                write_config_info("settings", "source", source_path)
+                write_config_info("settings", "destination", save_path)
                 image_list = get_image_list(source_path)
                 create_pdf_from_images(image_list, save_path)
 
