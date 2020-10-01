@@ -165,9 +165,6 @@ def event_loop():
     while True:
         event, values = window.read()
 
-        # if event == "Test":
-        #     open_pdf_file(f"C:/Users/hifas/Desktop/Resized")
-
         if event in (None, "Exit"):
             window.close()
             break
